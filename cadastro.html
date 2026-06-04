@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cadastro — Grupo de Estudos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2330;
+    --border: rgba(255,255,255,0.08);
+    --accent: #4f9eff;
+    --accent2: #7ec8ff;
+    --text: #e6edf3;
+    --text2: #8b949e;
+    --success: #3fb950;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { min-height: 100vh; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(79,158,255,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .container {
+    position: relative; z-index: 1;
+    max-width: 480px; margin: 0 auto;
+    padding: 2rem 1.25rem 3rem;
+  }
+
+  .header { text-align: center; margin-bottom: 2rem; }
+  .star-icon { font-size: 2rem; margin-bottom: 0.5rem; display: block; }
+  h1 { font-family: 'Sora', sans-serif; font-size: 1.5rem; font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
+  .subtitle { font-size: 0.85rem; color: var(--text2); margin-top: 0.4rem; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  .field { margin-bottom: 1.1rem; }
+  .field:last-child { margin-bottom: 0; }
+  label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.4rem;
+  }
+  input, select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    padding: 0.7rem 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238b949e' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.9rem center;
+    padding-right: 2.5rem;
+    cursor: pointer;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--text2); opacity: 0.6; }
+  select option { background: #1c2330; }
+
+  .divider {
+    height: 1px; background: var(--border);
+    margin: 1.25rem 0;
+  }
+
+  .section-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 1rem;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 0.85rem;
+    background: var(--accent);
+    color: #0d1117;
+    font-family: 'Sora', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    margin-top: 1.5rem;
+    letter-spacing: 0.01em;
+  }
+  .btn:hover { opacity: 0.9; }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .feedback {
+    display: none; margin-top: 1rem;
+    border-radius: 8px; padding: 0.8rem 1rem;
+    font-size: 0.88rem; text-align: center;
+  }
+  .feedback.ok { background: rgba(63,185,80,0.12); color: var(--success); border: 1px solid rgba(63,185,80,0.25); display: block; }
+  .feedback.err { background: rgba(255,80,80,0.1); color: #ff6b6b; border: 1px solid rgba(255,80,80,0.2); display: block; }
+
+  .loading { display: none; font-size: 0.8rem; color: var(--text2); text-align: center; margin-top: 0.5rem; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  .loading.show { display: block; animation: pulse 1.2s infinite; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <span class="star-icon">✦</span>
+    <h1>Grupo de Estudos</h1>
+    <p class="subtitle">Informe sua localização para o mapa do grupo</p>
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label for="nome">Nome</label>
+      <input type="text" id="nome" placeholder="Seu nome" autocomplete="name">
+    </div>
+
+    <div class="divider"></div>
+    <p class="section-label">Localização</p>
+
+    <div class="field">
+      <label for="pais-sel">País</label>
+      <select id="pais-sel">
+        <option value="">— selecione —</option>
+        <option value="brasil">Brasil</option>
+        <option value="outro">Outro país</option>
+      </select>
+    </div>
+
+    <div id="bloco-brasil" style="display:none">
+      <div class="field">
+        <label for="estado-sel">Estado</label>
+        <select id="estado-sel"><option value="">— selecione o estado —</option></select>
+      </div>
+      <div class="field" id="campo-cidade-br" style="display:none">
+        <label for="cidade-sel">Cidade</label>
+        <select id="cidade-sel"><option value="">carregando...</option></select>
+        <div class="loading" id="loading-cidades">Carregando municípios...</div>
+      </div>
+    </div>
+
+    <div id="bloco-outro" style="display:none">
+      <div class="field">
+        <label for="pais-txt">Nome do país</label>
+        <input type="text" id="pais-txt" placeholder="Ex: Portugal, Argentina...">
+      </div>
+      <div class="field">
+        <label for="cidade-txt">Cidade / Região</label>
+        <input type="text" id="cidade-txt" placeholder="Nome da sua cidade">
+      </div>
+    </div>
+
+    <button class="btn" id="btn-confirmar" onclick="confirmar()">Confirmar cadastro</button>
+    <div class="feedback" id="feedback"></div>
+  </div>
+</div>
+
+<script>
+// ⚠️ SUBSTITUA PELA SUA URL DO APPS SCRIPT
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwwT7g82MtVEarN3GYjezmcbaePiId6vUMO2i3CDP8UWQ89E0kBO3JftwWeds7Yd9-W/exec';
+
+const ESTADOS = [
+  {uf:'AC',nome:'Acre'},{uf:'AL',nome:'Alagoas'},{uf:'AP',nome:'Amapá'},
+  {uf:'AM',nome:'Amazonas'},{uf:'BA',nome:'Bahia'},{uf:'CE',nome:'Ceará'},
+  {uf:'DF',nome:'Distrito Federal'},{uf:'ES',nome:'Espírito Santo'},
+  {uf:'GO',nome:'Goiás'},{uf:'MA',nome:'Maranhão'},{uf:'MT',nome:'Mato Grosso'},
+  {uf:'MS',nome:'Mato Grosso do Sul'},{uf:'MG',nome:'Minas Gerais'},
+  {uf:'PA',nome:'Pará'},{uf:'PB',nome:'Paraíba'},{uf:'PR',nome:'Paraná'},
+  {uf:'PE',nome:'Pernambuco'},{uf:'PI',nome:'Piauí'},{uf:'RJ',nome:'Rio de Janeiro'},
+  {uf:'RN',nome:'Rio Grande do Norte'},{uf:'RS',nome:'Rio Grande do Sul'},
+  {uf:'RO',nome:'Rondônia'},{uf:'RR',nome:'Roraima'},{uf:'SC',nome:'Santa Catarina'},
+  {uf:'SP',nome:'São Paulo'},{uf:'SE',nome:'Sergipe'},{uf:'TO',nome:'Tocantins'}
+];
+
+const selEstado = document.getElementById('estado-sel');
+ESTADOS.forEach(e => {
+  const o = document.createElement('option');
+  o.value = e.uf; o.textContent = e.nome;
+  selEstado.appendChild(o);
+});
+
+document.getElementById('pais-sel').addEventListener('change', function() {
+  const v = this.value;
+  document.getElementById('bloco-brasil').style.display = v === 'brasil' ? 'block' : 'none';
+  document.getElementById('bloco-outro').style.display = v === 'outro' ? 'block' : 'none';
+  document.getElementById('campo-cidade-br').style.display = 'none';
+});
+
+selEstado.addEventListener('change', async function() {
+  const uf = this.value;
+  const cc = document.getElementById('campo-cidade-br');
+  const sc = document.getElementById('cidade-sel');
+  const ld = document.getElementById('loading-cidades');
+  if (!uf) { cc.style.display = 'none'; return; }
+  cc.style.display = 'block';
+  ld.classList.add('show');
+  sc.innerHTML = '<option value="">carregando...</option>';
+  try {
+    const r = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios?orderBy=nome`);
+    const data = await r.json();
+    sc.innerHTML = '<option value="">— selecione a cidade —</option>';
+    data.forEach(m => {
+      const o = document.createElement('option');
+      o.value = m.nome; o.textContent = m.nome;
+      sc.appendChild(o);
+    });
+  } catch(e) {
+    sc.innerHTML = '<option value="">erro — tente novamente</option>';
+  } finally {
+    ld.classList.remove('show');
+  }
+});
+
+async function confirmar() {
+  const nome = document.getElementById('nome').value.trim();
+  const pais = document.getElementById('pais-sel').value;
+  const fb = document.getElementById('feedback');
+  const btn = document.getElementById('btn-confirmar');
+
+  fb.className = 'feedback'; fb.textContent = '';
+
+  if (!nome) { mostrarErro('Por favor, informe seu nome.'); return; }
+  if (!pais)  { mostrarErro('Selecione o país.'); return; }
+
+  let paisNome, estado, cidade;
+  if (pais === 'brasil') {
+    estado = selEstado.options[selEstado.selectedIndex]?.text || '';
+    cidade = document.getElementById('cidade-sel').value;
+    if (!selEstado.value) { mostrarErro('Selecione o estado.'); return; }
+    if (!cidade)          { mostrarErro('Selecione a cidade.'); return; }
+    paisNome = 'Brasil';
+  } else {
+    paisNome = document.getElementById('pais-txt').value.trim();
+    estado   = '';
+    cidade   = document.getElementById('cidade-txt').value.trim();
+    if (!paisNome) { mostrarErro('Informe o nome do país.'); return; }
+    if (!cidade)   { mostrarErro('Informe a localidade.'); return; }
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+
+  const payload = { nome, pais: paisNome, estado, cidade, data: new Date().toLocaleDateString('pt-BR') };
+
+  try {
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    fb.textContent = '✓ Cadastro enviado com sucesso! Obrigado.';
+    fb.className = 'feedback ok';
+    limpar();
+  } catch(e) {
+    mostrarErro('Erro ao enviar. Verifique sua conexão e tente novamente.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Confirmar cadastro';
+  }
+}
+
+function mostrarErro(msg) {
+  const fb = document.getElementById('feedback');
+  fb.textContent = msg; fb.className = 'feedback err';
+}
+
+function limpar() {
+  ['nome','pais-txt','cidade-txt'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('pais-sel').value = '';
+  document.getElementById('bloco-brasil').style.display = 'none';
+  document.getElementById('bloco-outro').style.display  = 'none';
+  document.getElementById('campo-cidade-br').style.display = 'none';
+  selEstado.value = '';
+  document.getElementById('cidade-sel').innerHTML = '<option value="">— selecione a cidade —</option>';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapa do Grupo de Estudos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: rgba(22,27,34,0.95);
+    --border: rgba(255,255,255,0.08);
+    --accent: #4f9eff;
+    --text: #e6edf3;
+    --text2: #8b949e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Sora', sans-serif; overflow: hidden; }
+
+  #map { width: 100%; height: 100vh; background: #0a0f1a; }
+
+  /* Leaflet dark override */
+  .leaflet-tile { filter: brightness(0.25) saturate(0.4) hue-rotate(190deg); }
+  .leaflet-container { background: #080d14; }
+
+  /* HUD topo */
+  .hud {
+    position: fixed; top: 1.25rem; left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.5rem 1.25rem;
+    display: flex; align-items: center; gap: 0.75rem;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  }
+  .hud-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .hud-title { font-size: 0.85rem; font-weight: 600; letter-spacing: 0.04em; color: var(--text); }
+  .hud-count { font-size: 0.78rem; color: var(--text2); }
+
+  /* Tooltip */
+  .leaflet-tooltip {
+    background: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+    color: var(--text) !important;
+    font-family: 'Sora', sans-serif !important;
+    font-size: 0.78rem !important;
+    padding: 5px 10px !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5) !important;
+    white-space: nowrap;
+  }
+  .leaflet-tooltip::before { display: none !important; }
+
+  /* Legenda inferior */
+  .legend {
+    position: fixed; bottom: 1.25rem; left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.6rem 1.1rem;
+    font-size: 0.75rem; color: var(--text2);
+    backdrop-filter: blur(12px);
+    display: flex; align-items: center; gap: 0.6rem;
+  }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); flex-shrink:0; }
+
+  /* Loading overlay */
+  #overlay {
+    position: fixed; inset: 0; z-index: 2000;
+    background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
+  }
+  .spinner {
+    width: 36px; height: 36px;
+    border: 2px solid rgba(79,158,255,0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .overlay-text { font-size: 0.85rem; color: var(--text2); }
+
+  /* Marcador SVG inline */
+  .dot-pulse {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent, #4f9eff);
+    box-shadow: 0 0 0 0 rgba(79,158,255,0.7);
+    animation: ripple 2s infinite;
+    position: relative;
+  }
+  @keyframes ripple {
+    0%   { box-shadow: 0 0 0 0 rgba(79,158,255,0.6); }
+    70%  { box-shadow: 0 0 0 10px rgba(79,158,255,0); }
+    100% { box-shadow: 0 0 0 0 rgba(79,158,255,0); }
+  }
+</style>
+</head>
+<body>
+
+<div id="overlay">
+  <div class="spinner"></div>
+  <p class="overlay-text">Carregando pontos do grupo...</p>
+</div>
+
+<div class="hud">
+  <div class="hud-dot"></div>
+  <span class="hud-title">Grupo de Estudos</span>
+  <span class="hud-count" id="hud-count">—</span>
+</div>
+
+<div id="map"></div>
+
+<div class="legend">
+  <div class="legend-dot"></div>
+  <span>Cada ponto representa um membro do grupo</span>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ⚠️ SUBSTITUA PELO ID DA SUA PLANILHA (parte da URL do Google Sheets)
+const SHEET_ID  = '1WWDmuFzLHJAdk9DB6sRNSyo0tbFJKkw6u4I9ohre-ts';
+// ⚠️ SUBSTITUA PELA SUA CHAVE DE API DO GOOGLE (ou use a URL pública de CSV — ver guia)
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Cadastros`;
+
+const map = L.map('map', {
+  center: [-15, -50], zoom: 4,
+  zoomControl: true,
+  attributionControl: false
+});
+
+// Tiles escuros (CartoDB Dark Matter)
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  maxZoom: 18
+}).addTo(map);
+
+// Ícone ponto de luz
+function criarIcone(cor) {
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      width:12px;height:12px;border-radius:50%;
+      background:${cor};
+      box-shadow:0 0 0 3px rgba(79,158,255,0.15), 0 0 8px ${cor};
+    "></div>`,
+    iconSize: [12, 12],
+    iconAnchor: [6, 6]
+  });
+}
+
+// Geocodifica cidade+estado via Nominatim (OpenStreetMap, grátis)
+async function geocode(cidade, estado, pais) {
+  const query = estado ? `${cidade}, ${estado}, ${pais}` : `${cidade}, ${pais}`;
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
+  try {
+    const r = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' } });
+    const data = await r.json();
+    if (data.length > 0) return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+  } catch(e) {}
+  return null;
+}
+
+// Cache local para não repetir geocoding
+const geoCache = {};
+
+async function carregarDados() {
+  try {
+    const r = await fetch(SHEET_URL);
+    const text = await r.text();
+    // A API gviz retorna JSON embrulhado em /*O_o*/google.visualization.Query.setResponse(...)
+    const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
+    const rows = json.table.rows;
+
+    // Colunas: 0=nome, 1=pais, 2=estado, 3=cidade, 4=data
+    const membros = rows.map(r => ({
+      nome:   r.c[0]?.v || '',
+      pais:   r.c[1]?.v || '',
+      estado: r.c[2]?.v || '',
+      cidade: r.c[3]?.v || '',
+    }));
+
+    document.getElementById('hud-count').textContent = `${membros.length} membro${membros.length !== 1 ? 's' : ''}`;
+
+    // Agrupar por cidade para não geocodificar a mesma cidade 50x
+    const cidades = {};
+    membros.forEach(m => {
+      const key = `${m.cidade}|${m.estado}|${m.pais}`;
+      if (!cidades[key]) cidades[key] = { ...m, count: 0 };
+      cidades[key].count++;
+    });
+
+    // Geocodificar com pequeno delay para respeitar Nominatim (1 req/s)
+    const entries = Object.values(cidades);
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i];
+      const key = `${e.cidade}|${e.estado}|${e.pais}`;
+      if (!geoCache[key]) {
+        await new Promise(res => setTimeout(res, 1100));
+        const coords = await geocode(e.cidade, e.estado, e.pais);
+        geoCache[key] = coords;
+      }
+      const coords = geoCache[key];
+      if (!coords) continue;
+
+      // Tamanho do ponto varia com número de membros na mesma cidade
+      const size = Math.min(8 + e.count * 3, 22);
+      const icon = L.divIcon({
+        className: '',
+        html: `<div style="
+          width:${size}px;height:${size}px;border-radius:50%;
+          background:#4f9eff;
+          box-shadow:0 0 0 ${Math.round(size/3)}px rgba(79,158,255,0.15),
+                     0 0 ${size}px rgba(79,158,255,0.5);
+          transition: transform 0.2s;
+          cursor: pointer;
+        "></div>`,
+        iconSize: [size, size],
+        iconAnchor: [size/2, size/2]
+      });
+
+      const label = e.count > 1
+        ? `${e.cidade}${e.estado ? ', '+e.estado : ''} — ${e.count} membros`
+        : `${e.cidade}${e.estado ? ', '+e.estado : ''}`;
+
+      L.marker([coords.lat, coords.lon], { icon })
+        .addTo(map)
+        .bindTooltip(label, { permanent: false, direction: 'top', offset: [0, -4] });
+    }
+
+    document.getElementById('overlay').style.display = 'none';
+  } catch(err) {
+    document.querySelector('.overlay-text').textContent = 'Erro ao carregar dados. Verifique a configuração.';
+    console.error(err);
+  }
+}
+
+carregarDados();
+</script>
+</body>
+</html>
