@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guia de Configuração</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#0d1117; --surface:#161b22; --border:rgba(255,255,255,0.08); --accent:#4f9eff; --text:#e6edf3; --text2:#8b949e; --success:#3fb950; --warn:#e3b341; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;padding:2rem 1rem 4rem;max-width:680px;margin:0 auto;line-height:1.7;}
+  h1{font-size:1.6rem;font-weight:600;letter-spacing:-0.02em;margin-bottom:0.3rem;}
+  .lead{color:var(--text2);font-size:0.9rem;margin-bottom:2.5rem;}
+  h2{font-size:1rem;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.08em;margin:2rem 0 0.75rem;}
+  .step{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem;margin-bottom:1rem;counter-increment:steps;}
+  .step-num{font-size:0.72rem;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.4rem;}
+  .step p{font-size:0.9rem;color:var(--text);margin-bottom:0.5rem;}
+  .step p:last-child{margin-bottom:0;}
+  code{font-family:'JetBrains Mono',monospace;font-size:0.82rem;background:rgba(79,158,255,0.1);color:var(--accent);padding:2px 6px;border-radius:4px;}
+  pre{font-family:'JetBrains Mono',monospace;font-size:0.8rem;background:#0a0f1a;border:1px solid var(--border);border-radius:8px;padding:1rem;overflow-x:auto;margin:0.75rem 0;color:#c9d1d9;line-height:1.6;}
+  .tag{display:inline-block;font-size:0.72rem;font-weight:600;padding:2px 8px;border-radius:999px;margin-left:0.4rem;vertical-align:middle;}
+  .tag-ok{background:rgba(63,185,80,0.15);color:var(--success);}
+  .tag-warn{background:rgba(227,179,65,0.15);color:var(--warn);}
+  a{color:var(--accent);}
+  .box-warn{background:rgba(227,179,65,0.07);border:1px solid rgba(227,179,65,0.2);border-radius:8px;padding:0.75rem 1rem;font-size:0.85rem;color:var(--warn);margin:0.75rem 0;}
+  .box-ok{background:rgba(63,185,80,0.07);border:1px solid rgba(63,185,80,0.2);border-radius:8px;padding:0.75rem 1rem;font-size:0.85rem;color:var(--success);margin:0.75rem 0;}
+  hr{border:none;border-top:1px solid var(--border);margin:2rem 0;}
+</style>
+</head>
+<body>
+
+<h1>Guia de Configuração <span class="tag tag-ok">3 etapas</span></h1>
+<p class="lead">Siga os passos abaixo uma única vez. Após concluído, o cadastro e o mapa funcionarão automaticamente.</p>
+
+<hr>
+
+<h2>Etapa 1 — Criar a planilha no Google Sheets</h2>
+
+<div class="step">
+  <p class="step-num">Passo 1</p>
+  <p>Acesse <a href="https://sheets.google.com" target="_blank">sheets.google.com</a> e crie uma nova planilha em branco.</p>
+</div>
+
+<div class="step">
+  <p class="step-num">Passo 2</p>
+  <p>Renomeie a aba (guia inferior) para exatamente: <code>Cadastros</code></p>
+</div>
+
+<div class="step">
+  <p class="step-num">Passo 3</p>
+  <p>Na primeira linha, crie os cabeçalhos nas células A1 a E1:</p>
+  <pre>A1: Nome    B1: País    C1: Estado    D1: Cidade    E1: Data</pre>
+</div>
+
+<div class="step">
+  <p class="step-num">Passo 4</p>
+  <p>Copie o <strong>ID da planilha</strong> da barra de endereço do navegador. É o trecho longo entre <code>/d/</code> e <code>/edit</code>:</p>
+  <pre>https://docs.google.com/spreadsheets/d/<b>SEU_ID_AQUI</b>/edit</pre>
+  <p>Guarde esse ID — você vai precisar dele no arquivo <code>mapa.html</code>.</p>
+</div>
+
+<hr>
+
+<h2>Etapa 2 — Criar o Apps Script (recebe os cadastros)</h2>
+
+<div class="step">
+  <p class="step-num">Passo 1</p>
+  <p>Na planilha, clique no menu <strong>Extensões → Apps Script</strong>.</p>
+</div>
+
+<div class="step">
+  <p class="step-num">Passo 2</p>
+  <p>Apague o código existente e cole o código abaixo no editor:</p>
+<pre>function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var sheet = SpreadsheetApp.getActiveSpreadsheet()
+                              .getSheetByName('Cadastros');
+    sheet.appendRow([
+      data.nome  || '',
+      data.pais  || '',
+      data.estado|| '',
+      data.cidade|| '',
+      data.data  || new Date().toLocaleDateString('pt-BR')
+    ]);
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'ok' }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'erro', msg: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  return ContentService
+    .createTextOutput('Apps Script ativo.')
+    .setMimeType(ContentService.MimeType.TEXT);
+}</pre>
+</div>
+
+<div class="step">
+  <p class="step-num">Passo 3</p>
+  <p>Clique em <strong>Salvar projeto</strong> (ícone de disquete ou Ctrl+S).</p>
+</div>
+
+<div class="step">
+  <p class="step-num">Passo 4 — Publicar como Web App</p>
+  <p>Clique em <strong>Implantar → Nova implantação</strong>.</p>
+  <p>Em "Tipo", selecione <strong>App da Web</strong>.</p>
+  <p>Configure:</p>
+  <pre>Executar como:        Eu mesmo (sua conta Google)
+Quem tem acesso:      Qualquer pessoa (anônimo)</pre>
+  <p>Clique em <strong>Implantar</strong> e autorize as permissões quando solicitado.</p>
+</div>
+
+<div class="step">
+  <p class="step-num">Passo 5</p>
+  <p>Copie a <strong>URL da implantação</strong> (começa com <code>https://script.google.com/macros/s/...</code>).</p>
+  <div class="box-warn">⚠️ Guarde essa URL — ela não aparece novamente sem reimplantar.</div>
+</div>
+
+<hr>
+
+<h2>Etapa 3 — Configurar os arquivos HTML</h2>
+
+<div class="step">
+  <p class="step-num">No arquivo cadastro.html</p>
+  <p>Localize a linha:</p>
+  <pre>const APPS_SCRIPT_URL = 'COLE_AQUI_A_URL_DO_SEU_APPS_SCRIPT';</pre>
+  <p>Substitua pelo valor que você copiou no Passo 5 acima.</p>
+</div>
+
+<div class="step">
+  <p class="step-num">No arquivo mapa.html</p>
+  <p>Localize a linha:</p>
+  <pre>const SHEET_ID = 'COLE_AQUI_O_ID_DA_PLANILHA';</pre>
+  <p>Substitua pelo ID da planilha copiado na Etapa 1, Passo 4.</p>
+</div>
+
+<div class="step">
+  <p class="step-num">Tornar a planilha pública (leitura)</p>
+  <p>Na planilha, clique em <strong>Compartilhar → Alterar para qualquer pessoa com o link</strong>, com permissão de <strong>Visualizador</strong>. Isso permite que o mapa leia os dados sem login.</p>
+  <div class="box-ok">✓ Apenas leitura — ninguém pode editar a planilha pelo link público.</div>
+</div>
+
+<hr>
+
+<h2>Como hospedar e compartilhar</h2>
+
+<div class="step">
+  <p class="step-num">Opção recomendada — GitHub Pages (gratuito)</p>
+  <p>1. Crie uma conta em <a href="https://github.com" target="_blank">github.com</a> (gratuito).</p>
+  <p>2. Crie um repositório público, faça upload dos dois arquivos (<code>cadastro.html</code> e <code>mapa.html</code>).</p>
+  <p>3. Em <strong>Settings → Pages</strong>, ative o GitHub Pages na branch <code>main</code>.</p>
+  <p>4. Você receberá URLs como:</p>
+  <pre>https://seu-usuario.github.io/grupo-estudos/cadastro.html
+https://seu-usuario.github.io/grupo-estudos/mapa.html</pre>
+</div>
+
+<div class="step">
+  <p class="step-num">Outras opções gratuitas</p>
+  <p><a href="https://netlify.com" target="_blank">Netlify</a> — arraste os arquivos e publique em segundos.<br>
+  <a href="https://vercel.com" target="_blank">Vercel</a> — similar ao Netlify, muito simples.</p>
+</div>
+
+<hr>
+
+<h2>Resumo final</h2>
+<div class="box-ok">
+  ✓ Envie o link do <code>cadastro.html</code> para os membros do grupo.<br>
+  ✓ Visualize o mapa em <code>mapa.html</code> a qualquer momento — ele lê a planilha em tempo real.<br>
+  ✓ Pontos maiores = mais membros na mesma cidade. Passe o mouse para ver a cidade.
+</div>
+
+</body>
+</html>
