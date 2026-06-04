@@ -22,7 +22,7 @@
   #map { width: 100%; height: 100vh; background: #0a0f1a; }
 
   /* Leaflet dark override */
-  .leaflet-tile { filter: brightness(0.55) saturate(0.6) hue-rotate(190deg); }
+  .leaflet-tile { filter: brightness(0.25) saturate(0.4) hue-rotate(190deg); }
   .leaflet-container { background: #080d14; }
 
   /* HUD topo */
@@ -44,17 +44,15 @@
 
   /* Tooltip */
   .leaflet-tooltip {
-    background: rgba(10,15,26,0.97) !important;
-    border: 1px solid rgba(79,158,255,0.35) !important;
+    background: var(--surface) !important;
+    border: 1px solid var(--border) !important;
     border-radius: 8px !important;
-    color: #ffffff !important;
+    color: var(--text) !important;
     font-family: 'Sora', sans-serif !important;
-    font-size: 0.85rem !important;
-    font-weight: 500 !important;
-    padding: 6px 12px !important;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.7), 0 0 8px rgba(79,158,255,0.15) !important;
+    font-size: 0.78rem !important;
+    padding: 5px 10px !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5) !important;
     white-space: nowrap;
-    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
   }
   .leaflet-tooltip::before { display: none !important; }
 
@@ -128,7 +126,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 // ⚠️ SUBSTITUA PELO ID DA SUA PLANILHA (parte da URL do Google Sheets)
-const SHEET_ID  = 'COLE_AQUI_O_ID_DA_PLANILHA';
+const SHEET_ID  = '1WWDmuFzLHJAdk9DB6sRNSyo0tbFJKkw6u4I9ohre-ts';
 // ⚠️ SUBSTITUA PELA SUA CHAVE DE API DO GOOGLE (ou use a URL pública de CSV — ver guia)
 const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Cadastros`;
 
