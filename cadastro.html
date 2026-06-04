@@ -129,6 +129,32 @@
 
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
   .loading.show { display: block; animation: pulse 1.2s infinite; }
+
+  .btn-fechar {
+    width: 100%;
+    padding: 0.75rem;
+    background: transparent;
+    color: var(--text2);
+    font-family: 'Sora', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 0.75rem;
+    transition: background 0.2s, color 0.2s;
+  }
+  .btn-fechar:hover { background: var(--surface2); color: var(--text); }
+
+  .link-mapa {
+    display: block;
+    text-align: center;
+    margin-top: 1.25rem;
+    font-size: 0.85rem;
+    color: var(--text2);
+  }
+  .link-mapa a { color: var(--accent); text-decoration: none; }
+  .link-mapa a:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -182,7 +208,9 @@
 
     <button class="btn" id="btn-confirmar" onclick="confirmar()">Confirmar cadastro</button>
     <div class="feedback" id="feedback"></div>
+    <button class="btn-fechar" onclick="window.close()">✕ Fechar esta tela</button>
   </div>
+  <p class="link-mapa">Quer ver o mapa do grupo? <a href="mapa.html" target="_blank">Clique aqui →</a></p>
 </div>
 
 <script>
